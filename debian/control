@@ -1,0 +1,14 @@
+Source:  mullvadvpn-downloader-installer
+Section: system
+Priority: optional
+Maintainer: dolphinoracle <dolphinoracle@gmail.com>
+Build-Depends: debhelper (>=9)
+Standards-Version: 3.9.8
+
+Package: mullvadvpn-downloader-installer
+Version: 19.05.24
+Architecture: all
+Installed-Size: 60
+Depends: net-tools
+Description: installer script for Mullvad VPN daemon
+

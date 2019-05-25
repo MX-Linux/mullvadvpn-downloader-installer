@@ -1,0 +1,1 @@
+/usr/share/mullvad-downloader-installer/uninstall_mullvadvpn.sh
