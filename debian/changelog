@@ -1,3 +1,9 @@
+mullvadvpn-downloader-installer (19.11.01) mx; urgency=medium
+
+  * update install script (fehlix) 
+
+ -- Dolphin Oracle <dolphinoracle@gmail.com>  Fri, 29 Nov 2019 14:07:07 -0500
+
 mullvadvpn-downloader-installer (19.05.24) mx; urgency=medium
 
   * Initial release (fehlix)
