@@ -5,46 +5,44 @@
 [ "$(dpkg --print-architecture)" = "amd64" ] || exit 1
 
 ###########################################
+# prepare temp dirs
+rm -r /tmp/mullvad-keyring 2>/dev/null
+rm -r /tmp/mullvadvpn-linux-deb 2>/dev/null
+mkdir /tmp/mullvad-keyring
+mkdir /tmp/mullvadvpn-linux-deb
+chmod 700 /tmp/mullvad-keyring
+chmod 700 /tmp/mullvadvpn-linux-deb
+
+
 # prepare tidy-up
 tidy_up() {
 	# tidy up
 	[ "$SYSTEMCTL_EXIST" = "false" ] &&  rm /bin/systemctl 2>/dev/null
-	rm -r /tmp/mullvad-keyring 2>/dev/null
-	rm /tmp/mullvadvpn-linux.deb 2>/dev/null
-	rm /tmp/mullvadvpn-linux.deb.asc 2>/dev/null
+	rm -r /tmp/mullvad-keyring      2>/dev/null
+	rm -r /tmp/mullvadvpn-linux-deb 2>/dev/null
 }
 trap tidy_up EXIT
 
-DEB=$(curl -L -s --head https://mullvad.net/download/latest-deb-app 2>/dev/null | grep location | tail -1) 
-DEB="${DEB##*/}"
-[ -n "${DEB##*.deb}" -o -n "${DEB%%MullvadVPN*}" ] && DEB="MullvadVPN-latest.deb"
-
 # get mullvadvpn
 #
-echo "Downloading Mullvad VPN for Linux 64bit : ${DEB}"
+echo "Downloading Mullvad VPN for Linux 64bit"
+cd /tmp/mullvadvpn-linux-deb
+wget --progress=dot:giga --content-disposition https://mullvad.net/download/deb/latest 2>&1 | tee /tmp/mullvadvpn-linux-deb/wget.txt
+
+URL=$(grep -m1 -oE 'https://mullvad.net/media/app/MullvadVPN-[0-9.]+_amd64.deb' /tmp/mullvadvpn-linux-deb/wget.txt)
+DEB=$(basename "$URL" )
+SIG=$DEB.asc
 
 [ -n "$DEB" ] || { echo "ERROR: Download of Mullvad VPN failed [no package name] "; exit 3; } 
 
-rm /tmp/mullvadvpn-linux.deb 2>/dev/null
-
-#wget -O /tmp/mullvad-linux.deb --trust-server-names https://mullvad.net/download/latest-deb-app
-curl -RL -o /tmp/mullvad-linux.deb https://mullvad.net/download/latest-deb-app
-
-[ -f /tmp/mullvad-linux.deb ] || { echo "ERROR: Download of '${DEB}' failed "; exit 3; }
-
-
 # get signature
 #
-echo "Downloading Mullvad VPN signature : ${FLN##*/}.asc"
-rm /tmp/mullvadvpn-linux.deb.asc 2>/dev/null
-#wget -O /tmp/mullvad-linux.deb.asc --trust-server-names https://mullvad.net/download/latest-deb-sig
+echo "Downloading Mullvad VPN signature : ${SIG}"
 
-curl -RL -o /tmp/mullvad-linux.deb.asc https://mullvad.net/download/latest-deb-sig 
-[ -f /tmp/mullvad-linux.deb.asc ] || { echo "ERROR: Download of signature '${DEB}.asc' failed "; exit 4; }
+curl -RL -O $URL.asc
+ 
+[ -f "$SIG" ] || { echo "ERROR: Download of signature '${DEB}.asc' failed "; exit 4; }
 
-rm -r /tmp/mullvad-keyring 2>/dev/null
-mkdir /tmp/mullvad-keyring
-chmod 700 /tmp/mullvad-keyring
 
 # get Mullvad signing key
 #
@@ -92,8 +90,7 @@ gpg --with-fingerprint --with-subkey-fingerprint  \
 # verfiy deb-packge signaure
 
 echo "Check signature of downloaded deb-package"
-gpgv --keyring /tmp/mullvad-keyring/mullvad-keyring.kbx \
-     /tmp/mullvad-linux.deb.asc /tmp/mullvad-linux.deb || {
+gpgv --keyring /tmp/mullvad-keyring/mullvad-keyring.kbx "$SIG" "$DEB" || {
     "ERROR: Signature verifcation failed"; exit 6; }
 echo "OK, signature of downloaded deb-package verified"
  
@@ -124,7 +121,7 @@ fi
 # install Mullvad VPN deb-package
 #
 echo "Installing Mullvad VPN"
-dpkg --unpack /tmp/mullvad-linux.deb
+dpkg --unpack $DEB
 
 if pidof /sbin/init >/dev/null; then
   # rm postinst to finsh dpkg configure 
