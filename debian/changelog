@@ -1,3 +1,9 @@
+mullvadvpn-downloader-installer (20.08.01) mx; urgency=medium
+
+  * adjusted deb download to latest on github 
+
+ -- fehlix <fehlix@mxlinux.org>  Sat, 22 Aug 2020 00:59:15 +0200
+
 mullvadvpn-downloader-installer (20.03.01) mx; urgency=medium
 
   * new download location (fehlix) 
