@@ -27,28 +27,31 @@ trap tidy_up EXIT
 #
 echo "Downloading Mullvad VPN for Linux 64bit"
 cd /tmp/mullvadvpn-linux-deb
-wget --progress=dot:giga --content-disposition https://mullvad.net/download/deb/latest 2>&1 | tee /tmp/mullvadvpn-linux-deb/wget.txt
+#wget --progress=dot:giga --content-disposition https://mullvad.net/download/deb/latest 2>&1 | tee /tmp/mullvadvpn-linux-deb/wget.txt
 
-URL=$(grep -m1 -oE 'https://mullvad.net/media/app/MullvadVPN-[0-9.]+_amd64.deb' /tmp/mullvadvpn-linux-deb/wget.txt)
+#URL=$(grep -m1 -oE 'https://mullvad.net/media/app/MullvadVPN-[0-9.]+_amd64.deb' /tmp/mullvadvpn-linux-deb/wget.txt)
+URL=https://github.com$(curl -sRLJ https://github.com/mullvad/mullvadvpn-app/releases/latest| sed -nr '\!.*href="([[:alnum:]/_.-]+MullvadVPN[0-9._-]+_amd64.deb)".*!{s::\1:p;q}')
+
 DEB=$(basename "$URL" )
 SIG=$DEB.asc
 
+curl --progress-bar -RLJO $URL
 [ -n "$DEB" ] || { echo "ERROR: Download of Mullvad VPN failed [no package name] "; exit 3; } 
 
 # get signature
 #
 echo "Downloading Mullvad VPN signature : ${SIG}"
 
-curl -RL -O $URL.asc
+curl --progress-bar -RLJO $URL.asc
  
-[ -f "$SIG" ] || { echo "ERROR: Download of signature '${DEB}.asc' failed "; exit 4; }
+[ -f "$SIG" ] || { echo "ERROR: Download of signature '${SIG}' failed "; exit 4; }
 
 
 # get Mullvad signing key
 #
 echo "Downloading Mullvad VPN signing key : mullvad-code-signing.asc"
 
-curl -RL https://mullvad.net/media/mullvad-code-signing.asc \
+curl --progress-bar -RLJ https://mullvad.net/media/mullvad-code-signing.asc \
      -o /tmp/mullvad-keyring/mullvad-code-signing.asc
 [ -f /tmp/mullvad-keyring/mullvad-code-signing.asc ] || { 
     echo "ERROR: Download of Mullvad VPN signing key : mullvad-code-signing.asc failed "; exit 5; }
@@ -102,7 +105,7 @@ command -v systemctl >/dev/null || {
 	SYSTEMCTL_EXIST="false"; 
 }
 
-# close any mullvadvpn client is running
+# close any mullvadvpn clients
 #
 echo "Closing Mullvad VPN clients"
 
@@ -141,7 +144,7 @@ fi
 
 # start sysvinit mullvadvpn daemon and user client
 #
-if pidof /sbin/init 2>/dev/null && [ -x /etc/init.d/mullvad-daemon ] ; then
+if pidof /sbin/init >/dev/null && [ -x /etc/init.d/mullvad-daemon ] ; then
     # start mullvadvpn daemon if not running
     if ! /etc/init.d/mullvad-daemon status  >/dev/null 2>&1 ; then
         echo "Starting mullvadvpn ..."
@@ -161,8 +164,5 @@ fi
 
 # tidy up
 [ "$SYSTEMCTL_EXIST" = "false" ] &&  rm /bin/systemctl 2>/dev/null
-rm -r /tmp/mullvad-keyring 2>/dev/null
-rm /tmp/mullvadvpn-linux.deb 2>/dev/null
-rm /tmp/mullvadvpn-linux.deb.asc 2>/dev/null
 
 echo "DONE!"
